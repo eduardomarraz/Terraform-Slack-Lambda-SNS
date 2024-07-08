@@ -20,18 +20,18 @@ Configura la Clave SSH:
 Asegúrate de tener una clave SSH válida en tu sistema.
 Ejecuta el siguiente script para configurar y asignar los permisos adecuados:
 
-    ```bash
-   ```chmod +x setup_ssh.sh
+```bash
+chmod +x setup_ssh.sh
 ./setup_ssh.sh
-    ```
+```
 
 Paso 3: Despliegue de la Infraestructura
 Aplica la Configuración de Terraform:
 Despliega la infraestructura en tu cuenta de AWS utilizando Terraform:      
 
-    ```bash
+```bash
    terraform apply
-    ```
+```
 
 Notas Adicionales
 Asegúrate de tener configuradas las credenciales adecuadas de AWS en tu entorno.
