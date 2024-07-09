@@ -40,21 +40,23 @@ resource "aws_instance" "web" {
   ami                    = "ami-01b799c439fd5516a" # Amazon Linux 2 AMI
   instance_type          = "t2.micro"
   key_name               = aws_key_pair.deployer.key_name
+  iam_instance_profile   = "LabInstanceProfile"
   security_groups        = [aws_security_group.allow_http_ssh.name]
 
   user_data = <<-EOF
               #!/bin/bash
               sudo yum update -y
-              sudo yum install -y httpd
-              sudo systemctl start httpd
-              sudo systemctl enable httpd
-              sudo yum install -y php php-cli php-json php-mbstring
+              sudo yum install httpd -y
+              sudo service httpd start
+              sudo chkconfig httpd on
+              echo 'AddType application/x-httpd-php .php' | sudo tee -a /etc/httpd/conf/httpd.conf
               cd /var/www/html
-              sudo php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+              sudo yum install php  php-cli php-json  php-mbstring  -y
+              sudo  php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
               sudo php composer-setup.php
               sudo php -r "unlink('composer-setup.php');"
               sudo php composer.phar require aws/aws-sdk-php
-              sudo systemctl restart httpd
+              sudo service httpd restart
               echo '<!DOCTYPE html>
               <html lang="en">
               <head>
@@ -76,38 +78,51 @@ resource "aws_instance" "web" {
               </body>
               </html>' > /var/www/html/index.html
               echo '<?php
-              require 'vendor/autoload.php';
-              use Aws\Sns\SnsClient;
-              use Aws\Exception\AwsException;
-              if ($_SERVER["REQUEST_METHOD"] == "POST") {
-                  $name = $_POST["name"];
-                  $email = $_POST["email"];
-                  $message = $_POST["message"];
-                  $snsTopicArn = '${aws_sns_topic.contact_form.arn}';
-                  $snsClient = new SnsClient([
-                      'version' => 'latest',
-                      'region' => 'us-east-1'
-                  ]);
-                  $messageToSend = json_encode([
-                      'email' => $email,
-                      'name' => $name,
-                      'message' => $message
-                  ]);
-                  try {
-                      $snsClient->publish([
-                          'TopicArn' => $snsTopicArn,
-                          'Message' => $messageToSend
-                      ]);
-                      echo "Message sent successfully.";
-                  } catch (AwsException $e) {
-                      echo "Error sending message: " . $e->getMessage();
-                  }
-              } else {
-                  http_response_code(405);
-                  echo "Method Not Allowed";
-              }
-              ?>' > /var/www/html/submit.php
-              EOF
+                        require "vendor/autoload.php";
+                        
+                        use Aws\Sns\SnsClient;
+                        use Aws\Exception\AwsException;
+                        
+                        if ($_SERVER["REQUEST_METHOD"] == "POST") {
+                            $name = $_POST["name"];
+                            $email = $_POST["email"];
+                            $message = $_POST["message"];
+                        
+                            // Replace 'your-sns-topic-arn' with the ARN of your SNS topic
+                            $snsTopicArn = "${aws_sns_topic.contact_form.arn}";
+                        
+                            // Initialize SNS client
+                            $snsClient = new SnsClient([
+                                "version" => "latest",
+                                "region" => "us-east-1" // Replace with your desired AWS region
+                            ]);
+                        
+                            // Create message to send to SNS topic
+                            $messageToSend = json_encode([
+                                "email" => $email,
+                                "name" => $name,
+                                "message" => $message
+                            ]);
+                        
+                            try {
+                                // Publish message to SNS topic
+                                $snsClient->publish([
+                                    "TopicArn" => $snsTopicArn,
+                                    "Message" => $messageToSend
+                                ]);
+                        
+                                echo "Message sent successfully.";
+                            } catch (AwsException $e) {
+                                echo "Error sending message: " . $e->getMessage();
+                            }
+                        } else {
+                            http_response_code(405);
+                            echo "Method Not Allowed";
+                        }
+                        ?>
+
+                        ' > /var/www/html/submit.php
+                      EOF
 
   tags = {
     Name = "Terraform-EC2-Instance"
@@ -115,7 +130,7 @@ resource "aws_instance" "web" {
 }
 
 # Define el tópico SNS
-resource "aws_sns_topic" "contact_form" {
+resource "aws_sns_topic" "contact_form" { 
   name = "contact-form-topic"
 }
 
@@ -123,7 +138,7 @@ resource "aws_sns_topic" "contact_form" {
 resource "aws_lambda_function" "slack_notification" {
   filename         = "lambda_function.zip"
   function_name    = "slackNotification"
-  role             = "arn:aws:iam::180992220281:role/LabRole"
+  role             = "arn:aws:iam::414806913946:role/LabRole"
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.12"
   source_code_hash = filebase64sha256("lambda_function.zip")

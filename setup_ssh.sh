@@ -12,3 +12,6 @@ chmod 644 ${KEY_PATH}.pub
 
 # Output the public key content
 cat ${KEY_PATH}.pub
+
+# script para empaquetar lambda_function.py
+zip lambda_function.zip lambda_function.py
