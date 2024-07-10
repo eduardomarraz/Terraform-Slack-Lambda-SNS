@@ -22,6 +22,7 @@ Ejecuta el siguiente script para configurar y asignar los permisos adecuados:
 
 ```bash
 chmod +x setup_ssh.sh
+dos2unix setup_ssh.sh
 ./setup_ssh.sh
 ```
 
