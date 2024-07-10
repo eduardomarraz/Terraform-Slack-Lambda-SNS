@@ -78,7 +78,7 @@ resource "aws_instance" "web" {
               </body>
               </html>' > /var/www/html/index.html
               echo '<?php
-                        require 'vendor/autoload.php';
+                        require "vendor/autoload.php";
                         
                         use Aws\Sns\SnsClient;
                         use Aws\Exception\AwsException;
