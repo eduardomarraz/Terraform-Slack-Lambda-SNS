@@ -4,7 +4,7 @@ import json
 http = urllib3.PoolManager()
 
 def lambda_handler(event, context):
-    url = "https://hooks.slack.com/services/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" 
+    url = "https://hooks.slack.com/services/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" 
     msg = {
         "channel": "#terraform",
         "username": "abdessamad.ammi",
